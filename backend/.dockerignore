@@ -1,0 +1,15 @@
+# Data is volume-mounted at runtime, not baked into the image — see docker-compose.yml
+app/data/raw/*
+app/data/processed/*
+app/data/artifacts/*
+app/data/tmdb_cache/*
+!app/data/**/.gitkeep
+
+.env
+.venv/
+venv/
+__pycache__/
+*.pyc
+.idea/
+.git/
+.pytest_cache/

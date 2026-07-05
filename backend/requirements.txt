@@ -1,0 +1,16 @@
+# Built from the actual imports across backend/app — this file didn't exist
+# yet in the repo. Version floors reflect features actually used in the code
+# (pydantic v2's model_dump(), FastAPI's async lifespan context manager).
+
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.6
+pydantic-settings>=2.2
+
+pandas>=2.2
+numpy>=1.26
+scipy>=1.12
+scikit-learn>=1.4
+pyarrow>=15.0        # pandas parquet read/write backend (movies_processed.parquet, tmdb_metadata.parquet)
+
+requests>=2.31       # TMDB HTTP client

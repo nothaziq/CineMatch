@@ -1,0 +1,28 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # Bind-mount data so you can drop in your MovieLens CSVs and rebuilt
+      # artifacts without rebuilding the image. Matches the paths in
+      # app/core/config.py exactly.
+      - ./backend/app/data/raw:/app/app/data/raw
+      - ./backend/app/data/processed:/app/app/data/processed
+      - ./backend/app/data/artifacts:/app/app/data/artifacts
+      - ./backend/app/data/tmdb_cache:/app/app/data/tmdb_cache
+    environment:
+      # Populated from a root-level .env file (see .env.example) if you
+      # create one — Compose loads it automatically. Safe to leave unset;
+      # the app just runs without live TMDB enrichment.
+      TMDB_API_KEY: ${TMDB_API_KEY:-}
+      TMDB_ACCESS_TOKEN: ${TMDB_ACCESS_TOKEN:-}
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
