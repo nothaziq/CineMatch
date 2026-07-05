@@ -1,5 +1,10 @@
 import { apiClient } from "../../../services/apiClient";
-import type { MovieDetailOut, PaginatedMovies, RecommendationListOut } from "../../../types/api";
+import type {
+  MovieDetailOut,
+  MovieOut,
+  PaginatedMovies,
+  RecommendationListOut,
+} from "../../../types/api";
 
 export type SortOption = "popularity" | "top_rated" | "recent" | "title";
 
@@ -10,6 +15,18 @@ export async function fetchMovies(params: {
   page_size?: number;
 }): Promise<PaginatedMovies> {
   const { data } = await apiClient.get<PaginatedMovies>("/movies", { params });
+  return data;
+}
+
+// Note: /movies/search takes a flat `limit` (max 50), not offset-based
+// pagination. There's no cursor on the backend yet, so "load more" is
+// implemented by re-requesting with a larger limit against the same
+// (stable-ordered) query — see features/search/hooks/useSearch.ts.
+export async function searchMovies(query: string, limit = 20): Promise<MovieOut[]> {
+  if (!query.trim()) return [];
+  const { data } = await apiClient.get<MovieOut[]>("/movies/search", {
+    params: { q: query, limit },
+  });
   return data;
 }
 
