@@ -7,6 +7,7 @@ import { HomePage } from "../features/home/pages/HomePage";
 import { MovieDetailPage } from "../features/movie/pages/MovieDetailPage";
 import { RecommendationsPage } from "../features/recommendations/pages/RecommendationsPage";
 import { SearchPage } from "../features/search/pages/SearchPage";
+import { NotFoundPage } from "./NotFoundPage";
 
 export const router = createBrowserRouter([
   {
@@ -20,6 +21,7 @@ export const router = createBrowserRouter([
       { path: "favorites", element: <FavoritesPage /> },
       { path: "genres", element: <GenresPage /> },
       { path: "genres/:genre", element: <GenreDetailPage /> },
+      { path: "*", element: <NotFoundPage /> },
     ],
   },
 ]);
