@@ -1,0 +1,62 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  /* Backgrounds */
+  --color-ink: #0b0d12;          /* base background */
+  --color-panel: #151822;        /* glass panel surface */
+  --color-panel-border: #262b38; /* hairline border on panels */
+
+  /* Text */
+  --color-bone: #f0eee8;         /* primary text, warm off-white */
+  --color-bone-dim: #9a9aa3;     /* secondary text */
+
+  /* Accents */
+  --color-marquee: #d4a24c;      /* gold — ratings, primary CTAs, the "light leak" */
+  --color-marquee-dim: #8a6a30;
+  --color-signal: #6c7bff;       /* violet-blue — interactive/sci-fi accent */
+
+  /* Fonts */
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+body {
+  background-color: var(--color-ink);
+  color: var(--color-bone);
+  font-family: var(--font-body);
+}
+
+/* Glass panel utility — used by cards, nav, modals */
+.glass {
+  background: color-mix(in srgb, var(--color-panel) 80%, transparent);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--color-panel-border);
+}
+
+/* Signature "light leak" edge on card hover — the one bold move, used consistently */
+.light-leak {
+  position: relative;
+  overflow: hidden;
+}
+.light-leak::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 40%, color-mix(in srgb, var(--color-marquee) 35%, transparent) 50%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.light-leak:hover::before {
+  opacity: 1;
+}
+
+/* Respect reduced motion preference throughout the app */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

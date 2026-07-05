@@ -1,0 +1,13 @@
+.env
+__pycache__/
+*.pyc
+app/data/raw/*
+app/data/processed/*
+app/data/artifacts/*
+app/data/tmdb_cache/*
+!app/data/raw/.gitkeep
+!app/data/processed/.gitkeep
+!app/data/artifacts/.gitkeep
+!app/data/tmdb_cache/.gitkeep
+.venv/
+venv/
