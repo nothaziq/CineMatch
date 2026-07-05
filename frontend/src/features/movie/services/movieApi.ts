@@ -1,5 +1,6 @@
 import { apiClient } from "../../../services/apiClient";
 import type {
+  GenreCount,
   MovieDetailOut,
   MovieOut,
   PaginatedMovies,
@@ -35,12 +36,28 @@ export async function fetchMovieDetail(movieId: number): Promise<MovieDetailOut>
   return data;
 }
 
+export async function fetchGenres(): Promise<GenreCount[]> {
+  const { data } = await apiClient.get<GenreCount[]>("/movies/genres");
+  return data;
+}
+
 export async function fetchRecommendations(
   movieId: number,
   k = 10
 ): Promise<RecommendationListOut> {
   const { data } = await apiClient.get<RecommendationListOut>(`/recommendations/${movieId}`, {
     params: { k },
+  });
+  return data;
+}
+
+export async function fetchBatchRecommendations(
+  movieIds: number[],
+  k = 20
+): Promise<RecommendationListOut> {
+  const { data } = await apiClient.post<RecommendationListOut>("/recommendations/batch", {
+    movie_ids: movieIds,
+    k,
   });
   return data;
 }

@@ -1,11 +1,15 @@
-import { Star, Clock } from "lucide-react";
+import { Star, Clock, Heart } from "lucide-react";
 import type { MovieDetailOut } from "../../../types/api";
+import { useFavorites } from "../../favorites/hooks/useFavorites";
 
 interface MovieHeroProps {
   movie: MovieDetailOut;
 }
 
 export function MovieHero({ movie }: MovieHeroProps) {
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const favorited = isFavorite(movie.movie_id);
+
   return (
     <section className="relative overflow-hidden border-b border-[var(--color-panel-border)]">
       {movie.backdrop_url && (
@@ -36,9 +40,25 @@ export function MovieHero({ movie }: MovieHeroProps) {
         </div>
 
         <div className="flex-1">
-          <h1 className="font-[var(--font-display)] text-4xl font-semibold text-[var(--color-bone)] md:text-5xl">
-            {movie.title}
-          </h1>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <h1 className="font-[var(--font-display)] text-4xl font-semibold text-[var(--color-bone)] md:text-5xl">
+              {movie.title}
+            </h1>
+            <button
+              onClick={() => toggleFavorite(movie)}
+              aria-pressed={favorited}
+              aria-label={favorited ? "Remove from favorites" : "Add to favorites"}
+              className="glass flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm text-[var(--color-bone)] transition-colors hover:border-[var(--color-marquee)]"
+            >
+              <Heart
+                size={16}
+                className={favorited ? "text-[var(--color-marquee)]" : "text-[var(--color-bone-dim)]"}
+                fill={favorited ? "currentColor" : "none"}
+                strokeWidth={favorited ? 0 : 2}
+              />
+              {favorited ? "Favorited" : "Favorite"}
+            </button>
+          </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-3 font-[var(--font-mono)] text-sm text-[var(--color-bone-dim)]">
             {movie.year && <span>{movie.year}</span>}

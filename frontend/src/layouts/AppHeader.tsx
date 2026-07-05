@@ -15,6 +15,9 @@ export function AppHeader() {
         <Link to="/" className="transition-colors hover:text-[var(--color-bone)]">
           Home
         </Link>
+        <Link to="/recommendations" className="transition-colors hover:text-[var(--color-bone)]">
+          For You
+        </Link>
         <Link to="/genres" className="transition-colors hover:text-[var(--color-bone)]">
           Genres
         </Link>
