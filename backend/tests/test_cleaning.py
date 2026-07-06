@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import pytest
+
 from app.ml.pipeline.cleaning import (
     aggregate_ratings,
     aggregate_tags,
     clean_movies,
     clean_tags,
     compute_trending_scores,
+    compute_weighted_ratings,
 )
 
 
@@ -101,3 +104,86 @@ class TestComputeTrendingScores:
         wide_score = wide.loc[wide["movieId"] == 1, "trending_score"].iloc[0]
         narrow_score = narrow.loc[narrow["movieId"] == 1, "trending_score"].iloc[0] if 1 in narrow["movieId"].values else 0
         assert narrow_score <= wide_score
+
+
+class TestComputeWeightedRatings:
+    def test_fluke_perfect_score_ranks_below_large_strong_sample(self, raw_ratings_df):
+        """
+        Movie 3 has a single 5.0 rating (a fluke). Movie 6 has 20 ratings
+        averaging 4.8 (a large, genuinely strong sample). Plain avg_rating
+        would let movie 3's fluke outrank movie 6 — the whole point of the
+        Bayesian weighting is that it must not.
+        """
+        agg = aggregate_ratings(raw_ratings_df)
+        weighted, _c, _m = compute_weighted_ratings(agg)
+
+        movie_3 = weighted.loc[weighted["movieId"] == 3, "weighted_rating"].iloc[0]
+        movie_6 = weighted.loc[weighted["movieId"] == 6, "weighted_rating"].iloc[0]
+
+        # Sanity check the premise: plain averages would rank them the other way.
+        assert agg.loc[agg["movieId"] == 3, "avg_rating"].iloc[0] > agg.loc[agg["movieId"] == 6, "avg_rating"].iloc[0]
+        # The whole point: weighted_rating flips that.
+        assert movie_6 > movie_3
+
+    def test_weighted_rating_pulled_toward_global_mean_for_low_volume(self, raw_ratings_df):
+        agg = aggregate_ratings(raw_ratings_df)
+        weighted, c, _m = compute_weighted_ratings(agg)
+
+        movie_3 = weighted[weighted["movieId"] == 3].iloc[0]
+        # Its own average is 5.0, but with only 1 rating it should land
+        # somewhere strictly between its own average and the global mean —
+        # not stay at a full, unadjusted 5.0.
+        assert c < movie_3["weighted_rating"] < movie_3["avg_rating"]
+
+    def test_weighted_rating_barely_moves_for_high_volume(self, raw_ratings_df):
+        agg = aggregate_ratings(raw_ratings_df)
+        weighted, _c, _m = compute_weighted_ratings(agg)
+
+        movie_6 = weighted[weighted["movieId"] == 6].iloc[0]
+        # 20 ratings is a real sample — weighted_rating should stay close to
+        # (not drift far from) its own average.
+        assert abs(movie_6["weighted_rating"] - movie_6["avg_rating"]) < 0.5
+
+    def test_global_mean_is_true_per_rating_average_not_average_of_averages(self, raw_ratings_df):
+        """
+        C must be sum(all individual ratings) / count(all individual ratings)
+        — NOT the mean of each movie's own average — since the latter would
+        let a movie with 1 rating count exactly as much toward "the typical
+        rating" as one with 20 ratings.
+        """
+        agg = aggregate_ratings(raw_ratings_df)
+        _weighted, c, _m = compute_weighted_ratings(agg)
+
+        true_global_mean = raw_ratings_df["rating"].mean()
+        naive_average_of_averages = agg["avg_rating"].mean()
+
+        assert c == pytest.approx(true_global_mean)
+        assert c != pytest.approx(naive_average_of_averages)
+
+    def test_explicit_prior_votes_overrides_derived_median(self, raw_ratings_df):
+        agg = aggregate_ratings(raw_ratings_df)
+        _default_weighted, _c, default_m = compute_weighted_ratings(agg)
+        _overridden_weighted, _c2, overridden_m = compute_weighted_ratings(agg, prior_votes=1000)
+
+        assert overridden_m == 1000
+        assert default_m != 1000
+
+    def test_higher_prior_pulls_everything_closer_to_the_mean(self, raw_ratings_df):
+        agg = aggregate_ratings(raw_ratings_df)
+        low_prior, c, _m = compute_weighted_ratings(agg, prior_votes=1)
+        high_prior, _c2, _m2 = compute_weighted_ratings(agg, prior_votes=10_000)
+
+        movie_1_low = low_prior.loc[low_prior["movieId"] == 1, "weighted_rating"].iloc[0]
+        movie_1_high = high_prior.loc[high_prior["movieId"] == 1, "weighted_rating"].iloc[0]
+
+        # A huge prior should drag the weighted rating almost all the way to C.
+        assert abs(movie_1_high - c) < abs(movie_1_low - c)
+
+    def test_empty_input_returns_empty_frame_without_error(self):
+        import pandas as pd
+
+        empty = pd.DataFrame(columns=["movieId", "avg_rating", "rating_count"])
+        weighted, c, m = compute_weighted_ratings(empty)
+        assert weighted.empty
+        assert c == 0.0
+        assert m == 0.0

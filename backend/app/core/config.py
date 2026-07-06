@@ -41,6 +41,12 @@ class Settings(BaseSettings):
     trending_window_days: int = 90  # only ratings within this window count at all
     trending_half_life_days: int = 21  # exponential recency decay inside the window
 
+    # IMDB-style Bayesian weighted rating for "top rated" (see
+    # compute_weighted_ratings in cleaning.py). None means "derive m from the
+    # data itself" (the median rating count among rated movies) rather than a
+    # fixed magic number — set an explicit int here to override that.
+    bayesian_prior_votes: int | None = None
+
     # Genre feature weighting — repeating a token in the combined text document
     # increases its TF-IDF weight without needing a separate weighted-vectorizer scheme.
     genre_weight: int = 3

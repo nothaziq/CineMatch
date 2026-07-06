@@ -24,6 +24,7 @@ from app.ml.pipeline.cleaning import (
     clean_movies,
     clean_tags,
     compute_trending_scores,
+    compute_weighted_ratings,
 )
 from app.ml.pipeline.feature_engineering import build_feature_documents
 from app.ml.vectorizer import FeatureVectorizer
@@ -79,8 +80,10 @@ def raw_ratings_df() -> pd.DataFrame:
     for i in range(2):
         rows.append({"userId": 200 + i, "movieId": 2, "rating": 3.5, "timestamp": now - i * day})
 
-    # Movie 3: one middling rating.
-    rows.append({"userId": 300, "movieId": 3, "rating": 3.0, "timestamp": now - 10 * day})
+    # Movie 3: a single 5.0 rating — a "fluke" perfect score with no real
+    # sample size behind it. Plain average would let this outrank movie 6
+    # (20 ratings averaging 4.8); the Bayesian weighted rating should not.
+    rows.append({"userId": 300, "movieId": 3, "rating": 5.0, "timestamp": now - 10 * day})
 
     return pd.DataFrame(rows)
 
@@ -120,11 +123,13 @@ def built_movie_repository(raw_movies_df, raw_ratings_df, raw_tags_df, raw_links
     tags = clean_tags(raw_tags_df)
     tags_agg = aggregate_tags(tags)
     ratings_agg = aggregate_ratings(raw_ratings_df)
+    ratings_agg, global_mean_rating, _prior_m = compute_weighted_ratings(ratings_agg)
     trending_agg = compute_trending_scores(raw_ratings_df, window_days=90, half_life_days=21)
 
     movies = movies.merge(ratings_agg, on="movieId", how="left")
     movies["avg_rating"] = movies["avg_rating"].fillna(0.0)
     movies["rating_count"] = movies["rating_count"].fillna(0).astype(int)
+    movies["weighted_rating"] = movies["weighted_rating"].fillna(global_mean_rating)
     movies = movies.merge(trending_agg, on="movieId", how="left")
     movies["trending_score"] = movies["trending_score"].fillna(0.0)
     movies["recent_rating_count"] = movies["recent_rating_count"].fillna(0).astype(int)

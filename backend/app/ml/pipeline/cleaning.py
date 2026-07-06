@@ -84,14 +84,71 @@ def clean_tags(tags: pd.DataFrame) -> pd.DataFrame:
 
 def aggregate_ratings(ratings: pd.DataFrame) -> pd.DataFrame:
     """
-    Per-movie rating stats used for popularity/top-rated ranking and,
-    later, as a Bayesian-adjusted "weighted rating" (IMDB-style) so that
-    a movie with 3 five-star ratings doesn't outrank one with 50,000 ratings
-    averaging 4.5.
+    Per-movie rating stats used for popularity ranking and as the raw input
+    to compute_weighted_ratings()'s Bayesian adjustment for top-rated.
     """
     agg = ratings.groupby("movieId")["rating"].agg(["mean", "count"]).reset_index()
     agg = agg.rename(columns={"mean": "avg_rating", "count": "rating_count"})
     return agg
+
+
+def compute_weighted_ratings(
+    per_movie_ratings: pd.DataFrame,
+    prior_votes: float | None = None,
+) -> tuple[pd.DataFrame, float, float]:
+    """
+    IMDB-style Bayesian weighted rating, computed from the output of
+    aggregate_ratings() (columns: movieId, avg_rating, rating_count).
+
+        weighted_rating = (v / (v + m)) * R + (m / (v + m)) * C
+
+    where, per movie:
+      R = the movie's own average rating
+      v = the movie's own rating count
+    and globally:
+      C = the mean rating across every individual rating in the whole
+          dataset (NOT the mean of per-movie averages — averaging the
+          per-movie averages would let a movie with 2 ratings count as
+          much toward "the typical rating" as one with 50,000, which
+          defeats the point of computing C in the first place)
+      m = the "confidence" prior: how many ratings a movie needs before we
+          start trusting its own average over the global one. If not
+          given explicitly, this is derived from the data itself as the
+          median rating count among rated movies, so it scales sensibly
+          whether you're running this on a 6-row synthetic fixture or the
+          real 87k-movie dataset instead of relying on one magic constant.
+
+    A movie with few ratings gets pulled hard toward C (mostly "unproven,
+    assume average"); a movie with a huge rating count barely moves at all,
+    since its own average already reflects a large, trustworthy sample.
+
+    Returns (dataframe_with_weighted_rating_column, C_used, m_used) — C and
+    m are returned so callers can fill in a sensible weighted_rating (== C)
+    for movies that have zero ratings at all and never appear in this frame.
+    """
+    if per_movie_ratings.empty:
+        empty = per_movie_ratings.copy()
+        empty["weighted_rating"] = pd.Series(dtype=float)
+        return empty, 0.0, 0.0
+
+    # Algebraically identical to (sum of every individual rating) / (count of
+    # every individual rating), but computed from the already-aggregated
+    # per-movie table instead of re-scanning all 32M raw rating rows again.
+    total_rating_sum = (per_movie_ratings["avg_rating"] * per_movie_ratings["rating_count"]).sum()
+    total_count = per_movie_ratings["rating_count"].sum()
+    global_mean_c = float(total_rating_sum / total_count) if total_count > 0 else 0.0
+
+    prior_m = float(prior_votes) if prior_votes is not None else float(
+        per_movie_ratings["rating_count"].median()
+    )
+    prior_m = max(prior_m, 1.0)  # guard against a degenerate m <= 0
+
+    v = per_movie_ratings["rating_count"]
+    r = per_movie_ratings["avg_rating"]
+
+    result = per_movie_ratings.copy()
+    result["weighted_rating"] = (v / (v + prior_m)) * r + (prior_m / (v + prior_m)) * global_mean_c
+    return result, global_mean_c, prior_m
 
 
 def compute_trending_scores(

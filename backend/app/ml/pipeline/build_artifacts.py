@@ -23,6 +23,7 @@ from app.ml.pipeline.cleaning import (
     clean_movies,
     clean_tags,
     compute_trending_scores,
+    compute_weighted_ratings,
     load_links,
     load_movies,
     load_ratings,
@@ -59,6 +60,14 @@ def run() -> None:
     tags = clean_tags(tags_raw)
     tags_agg = aggregate_tags(tags)
     ratings_agg = aggregate_ratings(ratings_raw)
+    ratings_agg, global_mean_rating, prior_votes_used = compute_weighted_ratings(
+        ratings_agg, prior_votes=settings.bayesian_prior_votes
+    )
+    logger.info(
+        "Weighted rating prior: C (global mean rating) = %.3f, m (prior votes) = %.1f",
+        global_mean_rating,
+        prior_votes_used,
+    )
     trending_agg = compute_trending_scores(
         ratings_raw,
         window_days=settings.trending_window_days,
@@ -68,6 +77,11 @@ def run() -> None:
     movies = movies.merge(ratings_agg, on="movieId", how="left")
     movies["avg_rating"] = movies["avg_rating"].fillna(0.0)
     movies["rating_count"] = movies["rating_count"].fillna(0).astype(int)
+    # A movie with zero ratings has no evidence at all — the Bayesian formula
+    # at v=0 reduces to exactly C (the global mean), so that's what an
+    # unrated movie should score, not 0.0 (which would misrepresent it as
+    # the worst-reviewed movie in the catalog).
+    movies["weighted_rating"] = movies["weighted_rating"].fillna(global_mean_rating)
     movies = movies.merge(trending_agg, on="movieId", how="left")
     movies["trending_score"] = movies["trending_score"].fillna(0.0)
     movies["recent_rating_count"] = movies["recent_rating_count"].fillna(0).astype(int)

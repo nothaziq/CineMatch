@@ -16,6 +16,23 @@ class TestFilterAndSort:
         # Movie 1 has the strongest recent rating activity — should sort first.
         assert rows.iloc[0]["movieId"] == 1
 
+    def test_sort_by_top_rated_uses_weighted_rating_not_raw_average(self, built_movie_repository):
+        """
+        Movie 3 (1 rating, 5.0) has a higher raw average than movie 6 (20
+        ratings, 4.8), but top_rated must rank movie 6 first — that's the
+        entire point of the Bayesian weighted_rating over a plain average.
+        """
+        rows, _ = built_movie_repository.filter_and_sort(sort_by="top_rated", page=1, page_size=10)
+        movie_3_rank = rows.index.get_loc(3)
+        movie_6_rank = rows.index.get_loc(6)
+        assert movie_6_rank < movie_3_rank
+
+    def test_top_rated_falls_back_to_popularity_if_weighted_rating_missing(self, built_movie_repository):
+        # Simulate artifacts built before weighted_rating existed.
+        built_movie_repository._movies = built_movie_repository._movies.drop(columns=["weighted_rating"])
+        rows, _ = built_movie_repository.filter_and_sort(sort_by="top_rated", page=1, page_size=10)
+        assert rows.iloc[0]["movieId"] == rows.sort_values("rating_count", ascending=False).iloc[0]["movieId"]
+
     def test_trending_falls_back_to_popularity_if_column_missing(self, built_movie_repository):
         # Simulate artifacts built before trending_score existed.
         built_movie_repository._movies = built_movie_repository._movies.drop(columns=["trending_score"])

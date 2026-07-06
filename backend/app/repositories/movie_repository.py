@@ -68,7 +68,7 @@ class MovieRepository:
 
         sort_columns = {
             "popularity": ("rating_count", False),
-            "top_rated": ("avg_rating", False),
+            "top_rated": ("weighted_rating", False),
             "recent": ("year", False),
             "title": ("clean_title", True),
             "trending": ("trending_score", False),
