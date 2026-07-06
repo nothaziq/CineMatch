@@ -3,12 +3,16 @@
 __pycache__/
 *.pyc
 app/data/raw/*
-app/data/processed/*
-app/data/artifacts/*
 app/data/tmdb_cache/*
 !app/data/raw/.gitkeep
-!app/data/processed/.gitkeep
-!app/data/artifacts/.gitkeep
 !app/data/tmdb_cache/.gitkeep
+
+# Processed parquet + built artifacts ARE tracked (unlike raw/tmdb_cache above).
+# Railway builds from this git repo, not your local disk — there's no bind
+# mount in production like docker-compose gives you locally. These files are
+# the offline pipeline's *output* (small: parquet + top-k pickles), not the
+# raw dataset, so committing them is the only way the deployed API has
+# anything to load at startup. Run `python -m app.ml.pipeline.build_artifacts`
+# locally, then `git add app/data/processed app/data/artifacts` before pushing.
 .venv/
 venv/

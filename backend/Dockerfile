@@ -17,6 +17,9 @@ RUN mkdir -p app/data/raw app/data/processed app/data/artifacts app/data/tmdb_ca
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/v1/health', timeout=3).status == 200 else 1)"
+  CMD python -c "import os,urllib.request,sys; p=os.environ.get('PORT','8000'); sys.exit(0 if urllib.request.urlopen(f'http://localhost:{p}/api/v1/health', timeout=3).status == 200 else 1)"
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Shell form (not exec-form JSON array) so $PORT actually expands. Railway
+# injects PORT dynamically; locally/in docker-compose it's unset, so this
+# falls back to 8000 to match docker-compose.yml's port mapping exactly.
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}

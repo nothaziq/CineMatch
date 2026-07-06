@@ -1,7 +1,9 @@
-# Data is volume-mounted at runtime, not baked into the image — see docker-compose.yml
+# Raw CSVs and TMDB cache are volume-mounted locally (see docker-compose.yml)
+# and aren't needed at runtime — MovieRepository.load() only reads
+# app/data/processed/movies_processed.parquet and app/data/artifacts/*.
+# Those two ARE baked into the image (tracked in git, see backend/.gitignore)
+# because platforms like Railway build from git with no bind-mount equivalent.
 app/data/raw/*
-app/data/processed/*
-app/data/artifacts/*
 app/data/tmdb_cache/*
 !app/data/**/.gitkeep
 
