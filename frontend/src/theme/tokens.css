@@ -60,3 +60,25 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Custom scrollbar for horizontal movie rails — thin, dark track with a
+   gold thumb that matches the marquee accent, on both Firefox and
+   Chromium/WebKit browsers. Falls back to each browser's default scrollbar
+   silently wherever this class isn't applied. */
+.scrollbar-rail {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-marquee-dim) transparent;
+}
+.scrollbar-rail::-webkit-scrollbar {
+  height: 6px;
+}
+.scrollbar-rail::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-rail::-webkit-scrollbar-thumb {
+  background-color: var(--color-marquee-dim);
+  border-radius: 999px;
+}
+.scrollbar-rail::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-marquee);
+}
