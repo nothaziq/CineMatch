@@ -16,4 +16,5 @@ def health(request: Request) -> dict:
         "status": "ok" if artifacts_loaded else "degraded",
         "artifacts_loaded": artifacts_loaded,
         "movie_count": movie_count,
+        "startup_seconds": getattr(request.app.state, "startup_seconds", None),
     }

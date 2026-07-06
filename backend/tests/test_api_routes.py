@@ -94,5 +94,7 @@ class TestHealthEndpoint:
 
         if body["artifacts_loaded"]:
             assert body["movie_count"] > 0
+            assert isinstance(body["startup_seconds"], float)
+            assert body["startup_seconds"] >= 0
         else:
             assert body["movie_count"] == 0
