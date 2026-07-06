@@ -94,6 +94,51 @@ def aggregate_ratings(ratings: pd.DataFrame) -> pd.DataFrame:
     return agg
 
 
+def compute_trending_scores(
+    ratings: pd.DataFrame,
+    window_days: int,
+    half_life_days: int,
+) -> pd.DataFrame:
+    """
+    Recency-windowed trending signal, built from ratings.csv's `timestamp`
+    column (Unix epoch seconds).
+
+    "Now" is the dataset's own max timestamp, not wall-clock time — MovieLens
+    dumps are frozen snapshots, so treating real-world "today" as the
+    reference point would put every rating outside the window and make
+    everything score zero.
+
+    Only ratings within `window_days` of that reference point count at all;
+    within the window, each rating is weighted by exponential decay based on
+    its age, so a movie getting rated heavily in the last week outranks one
+    with the same volume spread evenly across the whole window. Movies with
+    no ratings in the window naturally get a score of 0 (dropped from the
+    groupby entirely, filled in by the caller).
+
+    Returns columns: movieId, trending_score, recent_rating_count.
+    """
+    if "timestamp" not in ratings.columns or ratings.empty:
+        return pd.DataFrame(columns=["movieId", "trending_score", "recent_rating_count"])
+
+    reference_time = ratings["timestamp"].max()
+    window_seconds = window_days * 86400
+    half_life_seconds = max(half_life_days, 1) * 86400
+
+    recent = ratings[ratings["timestamp"] >= reference_time - window_seconds].copy()
+    if recent.empty:
+        return pd.DataFrame(columns=["movieId", "trending_score", "recent_rating_count"])
+
+    age_seconds = reference_time - recent["timestamp"]
+    # Standard exponential decay: weight halves every `half_life_days`.
+    recent["_decay_weight"] = 0.5 ** (age_seconds / half_life_seconds)
+
+    grouped = recent.groupby("movieId").agg(
+        trending_score=("_decay_weight", "sum"),
+        recent_rating_count=("_decay_weight", "count"),
+    ).reset_index()
+    return grouped
+
+
 def aggregate_tags(tags: pd.DataFrame) -> pd.DataFrame:
     """Collapse all tags for a movie into a single space-joined string per movieId."""
     grouped = tags.groupby("movieId")["tag"].apply(lambda tags_: " ".join(tags_)).reset_index()

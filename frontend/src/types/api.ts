@@ -21,6 +21,7 @@ export interface MovieDetailOut extends MovieOut {
   runtime: number | null;
   release_date: string | null;
   backdrop_url: string | null;
+  trailer_url: string | null;
   tmdb_id: number | null;
   imdb_id: string | null;
 }

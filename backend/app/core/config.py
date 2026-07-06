@@ -35,6 +35,12 @@ class Settings(BaseSettings):
     tfidf_max_features: int = 20_000
     similarity_top_k: int = 30  # neighbors stored per movie
 
+    # Trending signal params. MovieLens timestamps are historical (the dataset
+    # was frozen years ago), so "recent" is always relative to the dataset's
+    # own most recent rating timestamp, never wall-clock time.
+    trending_window_days: int = 90  # only ratings within this window count at all
+    trending_half_life_days: int = 21  # exponential recency decay inside the window
+
     # Genre feature weighting — repeating a token in the combined text document
     # increases its TF-IDF weight without needing a separate weighted-vectorizer scheme.
     genre_weight: int = 3

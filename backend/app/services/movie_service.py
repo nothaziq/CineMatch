@@ -9,6 +9,7 @@ from __future__ import annotations
 import pandas as pd
 
 from app.repositories.movie_repository import MovieRepository
+from app.repositories.tmdb_repository import TMDBRepository
 from app.schemas.movie import GenreCount, MovieDetailOut, MovieOut, PaginatedMovies
 
 
@@ -50,6 +51,7 @@ class MovieService:
             runtime=None if pd.isna(row.get("runtime")) else int(row["runtime"]),
             release_date=row.get("release_date"),
             backdrop_url=MovieRepository.backdrop_url(row),
+            trailer_url=TMDBRepository.youtube_embed_url(row.get("trailer_key")),
             tmdb_id=None if pd.isna(tmdb_id) else int(tmdb_id),
             imdb_id=None if pd.isna(row.get("imdbId")) else str(row.get("imdbId")),
         )

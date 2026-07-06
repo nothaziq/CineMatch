@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useMovieDetail, useSimilarMovies } from "../hooks/useMovieDetail";
 import { MovieHero } from "../components/MovieHero";
+import { TrailerEmbed } from "../components/TrailerEmbed";
 import { SimilarMoviesRail } from "../components/SimilarMoviesRail";
 
 export function MovieDetailPage() {
@@ -30,6 +31,11 @@ export function MovieDetailPage() {
   return (
     <div>
       <MovieHero movie={detail.data} />
+      <TrailerEmbed
+        trailerUrl={detail.data.trailer_url}
+        title={detail.data.title}
+        backdropUrl={detail.data.backdrop_url}
+      />
       <SimilarMoviesRail
         recommendations={similar.data?.recommendations}
         isLoading={similar.isLoading}

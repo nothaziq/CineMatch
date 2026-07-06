@@ -4,7 +4,7 @@ import { fetchMovies } from "../../movie/services/movieApi";
 export function useTrendingMovies() {
   return useQuery({
     queryKey: ["movies", "trending"],
-    queryFn: () => fetchMovies({ sort: "popularity", page_size: 12 }),
+    queryFn: () => fetchMovies({ sort: "trending", page_size: 12 }),
   });
 }
 

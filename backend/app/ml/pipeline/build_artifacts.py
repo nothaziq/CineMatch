@@ -22,6 +22,7 @@ from app.ml.pipeline.cleaning import (
     aggregate_tags,
     clean_movies,
     clean_tags,
+    compute_trending_scores,
     load_links,
     load_movies,
     load_ratings,
@@ -58,10 +59,18 @@ def run() -> None:
     tags = clean_tags(tags_raw)
     tags_agg = aggregate_tags(tags)
     ratings_agg = aggregate_ratings(ratings_raw)
+    trending_agg = compute_trending_scores(
+        ratings_raw,
+        window_days=settings.trending_window_days,
+        half_life_days=settings.trending_half_life_days,
+    )
 
     movies = movies.merge(ratings_agg, on="movieId", how="left")
     movies["avg_rating"] = movies["avg_rating"].fillna(0.0)
     movies["rating_count"] = movies["rating_count"].fillna(0).astype(int)
+    movies = movies.merge(trending_agg, on="movieId", how="left")
+    movies["trending_score"] = movies["trending_score"].fillna(0.0)
+    movies["recent_rating_count"] = movies["recent_rating_count"].fillna(0).astype(int)
     movies = movies.merge(links_raw, on="movieId", how="left")
 
     tmdb_metadata = None

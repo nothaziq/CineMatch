@@ -7,7 +7,7 @@ import type {
   RecommendationListOut,
 } from "../../../types/api";
 
-export type SortOption = "popularity" | "top_rated" | "recent" | "title";
+export type SortOption = "popularity" | "top_rated" | "recent" | "title" | "trending";
 
 export async function fetchMovies(params: {
   genre?: string;

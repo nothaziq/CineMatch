@@ -30,7 +30,11 @@ export function MovieMultiSelect({ selected, onAdd, onRemove, atMax, maxSeeds }:
   return (
     <div>
       <div className="relative">
+        <label htmlFor="recommendation-seed-search" className="sr-only">
+          Search for a movie to add to your favorites
+        </label>
         <input
+          id="recommendation-seed-search"
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -38,8 +42,18 @@ export function MovieMultiSelect({ selected, onAdd, onRemove, atMax, maxSeeds }:
             atMax ? `Max ${maxSeeds} favorites picked` : "Search for a movie to add..."
           }
           disabled={atMax}
+          aria-describedby="recommendation-seed-search-status"
           className="glass w-full rounded-full px-5 py-3.5 font-[var(--font-body)] text-base text-[var(--color-bone)] outline-none placeholder:text-[var(--color-bone-dim)] disabled:opacity-50"
         />
+
+        {/* Visually-hidden live region: announces result counts to screen
+            reader users, who otherwise get no feedback when the dropdown
+            below updates after they stop typing. */}
+        <p id="recommendation-seed-search-status" role="status" className="sr-only">
+          {showDropdown && !search.isLoading
+            ? `${options.length} result${options.length === 1 ? "" : "s"} found`
+            : ""}
+        </p>
 
         {showDropdown && (
           <div className="glass absolute z-10 mt-2 w-full overflow-hidden rounded-xl">
@@ -77,7 +91,7 @@ export function MovieMultiSelect({ selected, onAdd, onRemove, atMax, maxSeeds }:
                       </span>
                     )}
                   </span>
-                  <Plus size={16} className="shrink-0 text-[var(--color-marquee)]" />
+                  <Plus size={16} aria-hidden className="shrink-0 text-[var(--color-marquee)]" />
                 </button>
               ))}
           </div>

@@ -9,8 +9,12 @@ interface SearchBarProps {
 export function SearchBar({ value, onChange, autoFocus }: SearchBarProps) {
   return (
     <div className="glass flex w-full items-center gap-3 rounded-full px-5 py-3.5">
-      <Search size={20} className="shrink-0 text-[var(--color-bone-dim)]" />
+      <Search size={20} aria-hidden className="shrink-0 text-[var(--color-bone-dim)]" />
+      <label htmlFor="movie-search-input" className="sr-only">
+        Search movies by title
+      </label>
       <input
+        id="movie-search-input"
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -24,7 +28,7 @@ export function SearchBar({ value, onChange, autoFocus }: SearchBarProps) {
           aria-label="Clear search"
           className="shrink-0 text-[var(--color-bone-dim)] transition-colors hover:text-[var(--color-bone)]"
         >
-          <X size={18} />
+          <X size={18} aria-hidden />
         </button>
       )}
     </div>

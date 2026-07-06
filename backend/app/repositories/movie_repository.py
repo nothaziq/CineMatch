@@ -71,8 +71,13 @@ class MovieRepository:
             "top_rated": ("avg_rating", False),
             "recent": ("year", False),
             "title": ("clean_title", True),
+            "trending": ("trending_score", False),
         }
         col, ascending = sort_columns.get(sort_by, sort_columns["popularity"])
+        if col not in df.columns:
+            # Artifacts built before trending_score existed — degrade to
+            # popularity rather than raising a KeyError.
+            col, ascending = sort_columns["popularity"]
         df = df.sort_values(by=col, ascending=ascending, na_position="last")
 
         total_items = len(df)

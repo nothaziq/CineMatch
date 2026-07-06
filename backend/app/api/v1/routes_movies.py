@@ -11,7 +11,7 @@ from app.services.search_service import SearchService
 
 router = APIRouter(prefix="/movies", tags=["movies"])
 
-SortOption = Literal["popularity", "top_rated", "recent", "title"]
+SortOption = Literal["popularity", "top_rated", "recent", "title", "trending"]
 
 
 @router.get("", response_model=PaginatedMovies)
@@ -40,10 +40,11 @@ def trending_movies(
     page_size: int = Query(default=20, ge=1, le=100),
     service: MovieService = Depends(get_movie_service),
 ) -> PaginatedMovies:
-    # Phase 1: "trending" approximated by popularity (rating_count). A true
-    # trending signal (recent rating velocity) needs ratings timestamps —
-    # noted as a future-roadmap item, not faked here.
-    return service.browse(sort_by="popularity", page=page, page_size=page_size)
+    # Recency-windowed trending: ratings.csv timestamps, decayed by age,
+    # relative to the dataset's own most recent rating (see cleaning.py's
+    # compute_trending_scores). Falls back to popularity automatically if
+    # artifacts were built before this column existed.
+    return service.browse(sort_by="trending", page=page, page_size=page_size)
 
 
 @router.get("/popular", response_model=PaginatedMovies)

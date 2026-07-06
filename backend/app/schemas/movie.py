@@ -30,6 +30,7 @@ class MovieDetailOut(MovieOut):
     runtime: int | None = None
     release_date: str | None = None
     backdrop_url: str | None = None
+    trailer_url: str | None = None
     tmdb_id: int | None = None
     imdb_id: str | None = None
 

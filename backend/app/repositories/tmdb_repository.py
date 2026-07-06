@@ -104,11 +104,21 @@ class TMDBRepository:
         cache_path = self._cache_path(tmdb_id)
         if cache_path.exists() and not force_refresh:
             with open(cache_path, "r") as f:
-                return json.load(f)
+                cached = json.load(f)
+            # Cache self-heals across append_to_response schema changes: if
+            # an older cached bundle predates a field we now request (e.g.
+            # "videos" added for trailer support), a stale hit would silently
+            # serve the old shape forever without ever calling TMDB again.
+            # Treat "missing an expected top-level block" as a cache miss.
+            if "videos" in cached:
+                return cached
+            logger.info(
+                "Cached bundle for tmdb_id=%s predates 'videos' — refetching once.", tmdb_id
+            )
 
         data = self._get(
             f"/movie/{tmdb_id}",
-            params={"append_to_response": "credits,keywords"},
+            params={"append_to_response": "credits,keywords,videos"},
         )
         if data is None:
             return None
@@ -117,6 +127,30 @@ class TMDBRepository:
             json.dump(data, f)
 
         return data
+
+    @staticmethod
+    def _extract_trailer_key(bundle: dict) -> str | None:
+        """
+        Pick the best YouTube trailer from TMDB's videos block: prefer an
+        official "Trailer" entry, fall back to any Trailer, then a Teaser.
+        Non-YouTube videos (Vimeo etc.) are skipped since the frontend embed
+        only supports YouTube's iframe API.
+        """
+        videos = bundle.get("videos", {}).get("results", [])
+        youtube_videos = [v for v in videos if v.get("site") == "YouTube"]
+
+        def best(video_type: str, official_only: bool) -> dict | None:
+            candidates = [v for v in youtube_videos if v.get("type") == video_type]
+            if official_only:
+                candidates = [v for v in candidates if v.get("official")]
+            return candidates[0] if candidates else None
+
+        video = (
+            best("Trailer", official_only=True)
+            or best("Trailer", official_only=False)
+            or best("Teaser", official_only=False)
+        )
+        return video["key"] if video else None
 
     @staticmethod
     def to_feature_row(bundle: dict) -> dict:
@@ -146,6 +180,7 @@ class TMDBRepository:
             "backdrop_path": bundle.get("backdrop_path"),
             "runtime": bundle.get("runtime"),
             "release_date": bundle.get("release_date"),
+            "trailer_key": TMDBRepository._extract_trailer_key(bundle),
         }
 
     @staticmethod
@@ -155,3 +190,12 @@ class TMDBRepository:
         if not path:
             return None
         return f"{settings.tmdb_image_base_url}/{size}{path}"
+
+    @staticmethod
+    def youtube_embed_url(trailer_key: str | None) -> str | None:
+        # Guard against pandas NaN for unmatched rows: NaN is a float and
+        # `not float('nan')` is False, so a naive falsy check would let it
+        # through and build a URL literally containing "nan".
+        if trailer_key is None or not isinstance(trailer_key, str) or not trailer_key:
+            return None
+        return f"https://www.youtube.com/embed/{trailer_key}"
