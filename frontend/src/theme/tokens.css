@@ -82,3 +82,64 @@ body {
 .scrollbar-rail::-webkit-scrollbar-thumb:hover {
   background-color: var(--color-marquee);
 }
+
+/* Custom cursor — a precise dot plus a trailing "spotlight" ring in the
+   marquee-gold accent, echoing .light-leak elsewhere. The class below is
+   only ever added by CustomCursor.tsx once it has confirmed (via JS) that
+   the device has a fine pointer and the user hasn't requested reduced
+   motion — so the native cursor never disappears without a replacement. */
+.custom-cursor-active,
+.custom-cursor-active * {
+  cursor: none !important;
+}
+
+.custom-cursor-dot,
+.custom-cursor-ring {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 9999;
+  will-change: transform;
+}
+
+.custom-cursor-dot {
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 999px;
+  background: var(--color-marquee);
+  transition: opacity 0.15s ease;
+}
+
+.custom-cursor-ring {
+  width: 32px;
+  height: 32px;
+  margin: -16px 0 0 -16px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-marquee) 60%, transparent);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-marquee) 18%, transparent) 0%,
+    transparent 70%
+  );
+  transition: width 0.25s ease, height 0.25s ease, margin 0.25s ease,
+    opacity 0.15s ease, border-color 0.25s ease;
+}
+
+.custom-cursor-ring--active {
+  width: 52px;
+  height: 52px;
+  margin: -26px 0 0 -26px;
+  border-color: var(--color-marquee);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-marquee) 28%, transparent) 0%,
+    transparent 70%
+  );
+}
+
+.custom-cursor-dot--hidden,
+.custom-cursor-ring--hidden {
+  opacity: 0;
+}
