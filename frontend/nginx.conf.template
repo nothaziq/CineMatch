@@ -1,11 +1,11 @@
-# "local=on" (nginx 1.27+) tells nginx to use whatever nameservers are in
-# this container's own /etc/resolv.conf, instead of a hardcoded IP. This
-# matters because Railway's private network uses its own internal DNS
-# resolver (confirmed via container shell: an IPv6 address like fd12::10),
-# NOT Docker Compose's embedded 127.0.0.11 — which is what was here before
-# and caused every /api/ request to hang for ~10s and fail, since nginx was
-# querying a nameserver that doesn't exist on Railway's network at all.
-resolver local=on valid=10s;
+# Hardcoded to the actual internal DNS resolver Railway's private network
+# uses (confirmed directly via container shell nslookup output). We tried
+# "local=on" (read from /etc/resolv.conf) first, but that file itself still
+# lists Docker's default 127.0.0.11 — which nothing listens on in Railway's
+# runtime — so it failed identically to hardcoding 127.0.0.11 directly.
+# fd12::10 is what Railway's own DNS actually answers on for this project/
+# environment, so we point nginx there explicitly instead.
+resolver [fd12::10] valid=10s;
 
 server {
     listen ${PORT};
