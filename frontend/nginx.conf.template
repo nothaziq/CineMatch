@@ -1,4 +1,11 @@
-resolver 127.0.0.11 valid=10s ipv6=off;
+# "local=on" (nginx 1.27+) tells nginx to use whatever nameservers are in
+# this container's own /etc/resolv.conf, instead of a hardcoded IP. This
+# matters because Railway's private network uses its own internal DNS
+# resolver (confirmed via container shell: an IPv6 address like fd12::10),
+# NOT Docker Compose's embedded 127.0.0.11 — which is what was here before
+# and caused every /api/ request to hang for ~10s and fail, since nginx was
+# querying a nameserver that doesn't exist on Railway's network at all.
+resolver local=on valid=10s;
 
 server {
     listen ${PORT};
