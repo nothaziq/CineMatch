@@ -1,11 +1,9 @@
-# Hardcoded to the actual internal DNS resolver Railway's private network
-# uses (confirmed directly via container shell nslookup output). We tried
-# "local=on" (read from /etc/resolv.conf) first, but that file itself still
-# lists Docker's default 127.0.0.11 — which nothing listens on in Railway's
-# runtime — so it failed identically to hardcoding 127.0.0.11 directly.
-# fd12::10 is what Railway's own DNS actually answers on for this project/
-# environment, so we point nginx there explicitly instead.
-resolver [fd12::10] valid=10s;
+# Hardcoded to Railway's documented internal DNS resolver address (confirmed
+# both by our own container's nslookup AND by Railway's own support docs:
+# https://station.railway.com/questions/nginx-with-private-networking-upstream-8d7ce3c3).
+# valid=1s (not 10s) matters: private IPs for a service change on every
+# redeploy, so a longer cache would serve stale/dead addresses until it expires.
+resolver [fd12::10] ipv6=on valid=1s;
 
 server {
     listen ${PORT};
