@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1 import routes_health, routes_movies, routes_recommendations
+from app.core.config import settings
 from app.core.lifespan import lifespan
 from app.middleware.error_handler import register_error_handlers
 
@@ -16,7 +17,8 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],  # Vite/CRA dev servers
+    allow_origins=settings.cors_origins,  # dev defaults + CORS_ORIGINS env var (e.g. Vercel domain)
+    allow_origin_regex=settings.cors_origin_regex or None,  # e.g. CORS_ORIGIN_REGEX for Vercel previews
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

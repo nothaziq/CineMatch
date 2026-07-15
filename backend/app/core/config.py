@@ -6,6 +6,7 @@ and the FastAPI lifespan hook all agree on where data lives — no hardcoded
 strings scattered across modules.
 """
 from pathlib import Path
+from pydantic import Field
 from pydantic_settings import BaseSettings
 
 
@@ -21,6 +22,23 @@ class Settings(BaseSettings):
 
     # Final pickled artifacts consumed by FastAPI at startup
     artifacts_dir: Path = app_dir / "data" / "artifacts"
+
+    # CORS — comma-separated list of allowed origins, e.g.
+    # "https://cinematch.vercel.app,https://your-custom-domain.com".
+    # Set this via the CORS_ORIGINS env var in Railway. Localhost dev
+    # servers are always allowed on top of whatever's configured here.
+    cors_origins_raw: str = Field(default="", alias="CORS_ORIGINS")
+
+    # Optional regex to allow an entire family of origins (e.g. every Vercel
+    # preview deployment for this project: r"https://cinematch-.*\.vercel\.app").
+    # Set via CORS_ORIGIN_REGEX env var. Leave empty to disable.
+    cors_origin_regex: str = Field(default="", alias="CORS_ORIGIN_REGEX")
+
+    @property
+    def cors_origins(self) -> list[str]:
+        dev_defaults = ["http://localhost:5173", "http://localhost:3000"]
+        extra = [o.strip() for o in self.cors_origins_raw.split(",") if o.strip()]
+        return dev_defaults + extra
 
     # TMDB
     tmdb_api_key: str = ""
